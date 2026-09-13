@@ -1,0 +1,23 @@
+{
+    "Urban": {
+        "unemployment": 6.5,
+        "inflation": 5.2,
+        "demand": 75,
+        "competition": 80,
+        "growth": 7.0
+    },
+    "Semi-Urban": {
+        "unemployment": 7.5,
+        "inflation": 5.0,
+        "demand": 60,
+        "competition": 60,
+        "growth": 6.0
+    },
+    "Rural": {
+        "unemployment": 8.5,
+        "inflation": 4.8,
+        "demand": 45,
+        "competition": 40,
+        "growth": 5.0
+    }
+}

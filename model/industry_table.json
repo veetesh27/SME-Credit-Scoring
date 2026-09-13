@@ -1,0 +1,62 @@
+{
+    "Trading & Retail": {
+        "growth": 6.5,
+        "risk": "Medium",
+        "demand": 65,
+        "vol": 40
+    },
+    "Manufacturing": {
+        "growth": 7.0,
+        "risk": "Medium",
+        "demand": 60,
+        "vol": 45
+    },
+    "Textiles & Apparel": {
+        "growth": 5.0,
+        "risk": "High",
+        "demand": 55,
+        "vol": 55
+    },
+    "Food & Beverage": {
+        "growth": 8.0,
+        "risk": "Low",
+        "demand": 75,
+        "vol": 30
+    },
+    "IT & ITES Services": {
+        "growth": 12.0,
+        "risk": "Low",
+        "demand": 80,
+        "vol": 25
+    },
+    "Construction & Real Estate": {
+        "growth": 6.0,
+        "risk": "High",
+        "demand": 50,
+        "vol": 60
+    },
+    "Auto Components": {
+        "growth": 6.5,
+        "risk": "Medium",
+        "demand": 58,
+        "vol": 42
+    },
+    "Healthcare & Pharma": {
+        "growth": 10.0,
+        "risk": "Low",
+        "demand": 78,
+        "vol": 28
+    },
+    "Agriculture & Allied": {
+        "growth": 4.5,
+        "risk": "High",
+        "demand": 52,
+        "vol": 58
+    },
+    "Transportation & Logistics": {
+        "growth": 7.5,
+        "risk": "Medium",
+        "demand": 62,
+        "vol": 38
+    }
+}

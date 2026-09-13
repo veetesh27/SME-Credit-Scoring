@@ -1,0 +1,42 @@
+{
+  "score_range": {
+    "min": 300,
+    "max": 900
+  },
+  "score_formula": {
+    "calibration_percentile_low": 1,
+    "calibration_percentile_high": 99,
+    "P1": 0.04650098830461502,
+    "P99": 0.8871987462043762,
+    "SCORE_FACTOR": -118.03805541992188,
+    "SCORE_OFFSET": 543.4465942382812
+  },
+  "risk_bands": {
+    "Excellent": [
+      750,
+      900
+    ],
+    "Good": [
+      650,
+      749
+    ],
+    "Moderate": [
+      550,
+      649
+    ],
+    "High Risk": [
+      450,
+      549
+    ],
+    "Very High Risk": [
+      300,
+      449
+    ]
+  },
+  "eligibility_rules": {
+    "MAX_DEBT_SERVICE_RATIO": 0.45,
+    "MIN_BUSINESS_AGE_YEARS": 1.0,
+    "MIN_GST_FILING_REGULARITY": 0.4,
+    "MIN_NET_MONTHLY_CASHFLOW": 0
+  }
+}

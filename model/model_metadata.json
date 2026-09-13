@@ -1,0 +1,22 @@
+{
+  "model_type": "XGBoost Classifier",
+  "model_purpose": "SME credit risk prediction",
+  "dataset_type": "Synthetic",
+  "random_state": 42,
+  "n_samples": 6000,
+  "n_features": 46,
+  "train_samples": 4200,
+  "validation_samples": 900,
+  "test_samples": 900,
+  "test_roc_auc": 0.8161371484450601,
+  "test_pr_auc": 0.44800910697407187,
+  "test_accuracy": 0.7666666666666667,
+  "test_precision": 0.3445692883895131,
+  "test_recall": 0.7244094488188977,
+  "test_f1": 0.467005076142132,
+  "credit_score_range": [
+    300,
+    900
+  ],
+  "created_at": "2026-09-13T09:29:12.557862"
+}
