@@ -144,7 +144,7 @@ SME-Credit-Scoring/
 Clone the repository:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/SME-Credit-Scoring.git
+git clone https://github.com/veetesh27/SME-Credit-Scoring.git
 cd SME-Credit-Scoring
 ```
 
