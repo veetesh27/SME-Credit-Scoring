@@ -8,6 +8,8 @@ An AI-powered prototype for assessing the credit risk and loan eligibility of Sm
 
 👉 [Open the Live SME Credit Assessment System](https://sme-credit-scoring.streamlit.app/)
 
+👉 [Open the Google Colab Notebook](https://colab.research.google.com/drive/1fO-dj--8ujRpMGSfrOJxn8u9uXynfIFW?usp=sharing)
+
 The application is deployed using Streamlit Community Cloud and can be accessed through a public `streamlit.app` URL.
 
 ## 📌 Project Overview
