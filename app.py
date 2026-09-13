@@ -178,6 +178,39 @@ with col1:
         step=1.0
     )
 
+# ============================================================
+# LOAN PLANNING INFORMATION
+# ============================================================
+
+st.header("📈 Loan Planning")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    requested_loan_amount = st.number_input(
+        "Requested Loan Amount (INR)",
+        min_value=0.0,
+        value=1_000_000.0,
+        step=50_000.0
+    )
+
+with col2:
+    projected_revenue_growth_rate = st.number_input(
+        "Projected Annual Revenue Growth (%)",
+        min_value=-50.0,
+        max_value=100.0,
+        value=10.0,
+        step=0.5
+    )
+
+with col3:
+    projected_expense_growth_rate = st.number_input(
+        "Projected Annual Expense Growth (%)",
+        min_value=-50.0,
+        max_value=100.0,
+        value=8.0,
+        step=0.5
+    )
 
 # ============================================================
 # BANKING & TRANSACTION INFORMATION
@@ -349,7 +382,9 @@ if st.button(
         "existing_total_liabilities": existing_total_liabilities,
         "existing_monthly_debt_obligation": existing_monthly_debt_obligation,
         "working_capital_cycle_days": working_capital_cycle_days,
-
+        "requested_loan_amount": requested_loan_amount,
+        "projected_revenue_growth_rate": projected_revenue_growth_rate,
+        "projected_expense_growth_rate": projected_expense_growth_rate,
         "num_transactions_per_month": num_transactions_per_month,
         "credit_transaction_consistency": credit_transaction_consistency,
         "cash_deposit_frequency": cash_deposit_frequency,

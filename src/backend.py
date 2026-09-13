@@ -680,44 +680,44 @@ def loan_eligibility_decision(
 
 
 # ============================================================
-# LOAN OPTIMIZER
+# CASH-FLOW-BASED LOAN OPTIMIZATION
 # ============================================================
 
 LOAN_ANNUAL_INTEREST_RATE = 0.12
-LOAN_TENURE_MONTHS = 36
 
-RISK_ADJUSTMENTS = {
+# Candidate repayment periods considered by the prototype.
+# The system will choose the shortest tenure that can support
+# the recommended loan amount.
+TENURE_OPTIONS_MONTHS = [12, 24, 36, 48, 60]
 
-    'Excellent': 1.00,
-    'Good': 0.85,
-    'Moderate': 0.65,
-    'High Risk': 0.40,
-    'Very High Risk': 0.00
-}
+# Maximum total debt-service ratio.
+MAX_TOTAL_DEBT_SERVICE_RATIO = 0.45
+
+# Conservative proportion of projected cash flow that may be
+# used for the new loan EMI.
+MAX_CASHFLOW_TO_NEW_EMI_RATIO = 0.40
 
 
-def calculate_emi(
-    principal,
-    annual_rate,
-    months
-):
+def calculate_emi(principal, annual_rate, months):
+    """
+    Calculate monthly EMI for a given principal,
+    annual interest rate and tenure.
+    """
 
-    monthly_rate = (
-        annual_rate / 12
-    )
+    if principal <= 0:
+        return 0.0
+
+    monthly_rate = annual_rate / 12
 
     if monthly_rate == 0:
-
         return principal / months
 
     emi = (
         principal
         * monthly_rate
         * (1 + monthly_rate) ** months
-        /
-        (
-            (1 + monthly_rate) ** months
-            - 1
+        / (
+            (1 + monthly_rate) ** months - 1
         )
     )
 
@@ -727,38 +727,100 @@ def calculate_emi(
 def calculate_max_loan_from_emi(
     available_monthly_payment,
     annual_rate=LOAN_ANNUAL_INTEREST_RATE,
-    months=LOAN_TENURE_MONTHS
+    months=36
 ):
+    """
+    Calculate the maximum loan principal affordable
+    for a specified monthly EMI capacity.
+    """
 
     if available_monthly_payment <= 0:
-        return 0
+        return 0.0
 
-    monthly_rate = (
-        annual_rate / 12
-    )
+    monthly_rate = annual_rate / 12
 
     if monthly_rate == 0:
-
-        return (
-            available_monthly_payment
-            * months
-        )
+        return available_monthly_payment * months
 
     loan_amount = (
         available_monthly_payment
         * (
-            (1 + monthly_rate)
-            ** months - 1
+            (1 + monthly_rate) ** months - 1
         )
-        /
-        (
+        / (
             monthly_rate
-            * (1 + monthly_rate)
-            ** months
+            * (1 + monthly_rate) ** months
         )
     )
 
     return loan_amount
+
+
+def project_cash_flows(
+    monthly_revenue,
+    monthly_expenses,
+    annual_revenue_growth,
+    annual_expense_growth,
+    months
+):
+    """
+    Project monthly revenue, expenses and net cash flow.
+
+    Growth rates are provided as annual percentages.
+    """
+
+    annual_revenue_growth = annual_revenue_growth / 100
+    annual_expense_growth = annual_expense_growth / 100
+
+    monthly_revenue_growth = (
+        (1 + annual_revenue_growth) ** (1 / 12) - 1
+    )
+
+    monthly_expense_growth = (
+        (1 + annual_expense_growth) ** (1 / 12) - 1
+    )
+
+    projected_revenues = []
+    projected_expenses = []
+    projected_cashflows = []
+
+    for month in range(1, months + 1):
+
+        projected_revenue = (
+            monthly_revenue
+            * (1 + monthly_revenue_growth) ** month
+        )
+
+        projected_expense = (
+            monthly_expenses
+            * (1 + monthly_expense_growth) ** month
+        )
+
+        projected_cashflow = (
+            projected_revenue - projected_expense
+        )
+
+        projected_revenues.append(projected_revenue)
+        projected_expenses.append(projected_expense)
+        projected_cashflows.append(projected_cashflow)
+
+    return {
+        "average_projected_revenue": float(
+            np.mean(projected_revenues)
+        ),
+        "average_projected_expenses": float(
+            np.mean(projected_expenses)
+        ),
+        "average_projected_cashflow": float(
+            np.mean(projected_cashflows)
+        ),
+        "minimum_projected_cashflow": float(
+            np.min(projected_cashflows)
+        ),
+        "maximum_projected_cashflow": float(
+            np.max(projected_cashflows)
+        )
+    }
 
 
 def recommend_loan_amount(
@@ -766,95 +828,307 @@ def recommend_loan_amount(
     credit_score,
     eligibility_status
 ):
+    """
+    Recommend an indicative loan amount and repayment tenure
+    using projected cash-flow serviceability.
 
-    revenue = applicant[
-        'avg_monthly_revenue'
-    ]
+    The calculation considers:
+    - projected revenue
+    - projected expenses
+    - projected cash flow
+    - existing debt obligation
+    - debt-service capacity
+    - risk-category adjustment
+    - requested loan amount
+    - available tenure options
+    """
 
-    existing_debt_payment = applicant[
-        'existing_monthly_debt_obligation'
-    ]
-
-    # Maximum total debt payment
-    max_total_debt_service = (
-        revenue
-        * MAX_DEBT_SERVICE_RATIO
+    revenue = float(
+        applicant["avg_monthly_revenue"]
     )
 
-    # Available payment for new loan
-    available_new_payment = (
-        max_total_debt_service
-        - existing_debt_payment
+    expenses = float(
+        applicant["avg_monthly_expenses"]
     )
 
-    available_new_payment = max(
-        available_new_payment,
-        0
+    existing_debt_payment = float(
+        applicant["existing_monthly_debt_obligation"]
     )
 
-    # Convert EMI capacity to loan amount
-    serviceability_amount = (
-        calculate_max_loan_from_emi(
-            available_new_payment
+    requested_loan_amount = float(
+        applicant.get("requested_loan_amount", 0)
+    )
+
+    projected_revenue_growth = float(
+        applicant.get(
+            "projected_revenue_growth_rate",
+            applicant.get("revenue_growth_rate", 0)
         )
     )
 
-    category = risk_category(
-        credit_score
+    projected_expense_growth = float(
+        applicant.get(
+            "projected_expense_growth_rate",
+            0
+        )
     )
 
-    adjustment = RISK_ADJUSTMENTS[
-        category
+    risk_adjustments = {
+        "Excellent": 1.00,
+        "Good": 0.85,
+        "Moderate": 0.65,
+        "High Risk": 0.40,
+        "Very High Risk": 0.00
+    }
+
+    adjustment = risk_adjustments[
+        risk_category(credit_score)
     ]
 
-    recommended_amount = (
-        serviceability_amount
+    # --------------------------------------------------------
+    # Ineligible applicants receive no loan recommendation.
+    # --------------------------------------------------------
+
+    if eligibility_status.startswith("Not Eligible"):
+
+        return {
+            "requested_loan_amount": requested_loan_amount,
+            "recommended_loan_amount": 0.0,
+            "assumed_interest_rate": LOAN_ANNUAL_INTEREST_RATE,
+            "assumed_tenure_months": None,
+            "monthly_emi": 0.0,
+            "average_projected_revenue": 0.0,
+            "average_projected_expenses": 0.0,
+            "average_projected_cashflow": 0.0,
+            "minimum_projected_cashflow": 0.0,
+            "maximum_projected_cashflow": 0.0,
+            "maximum_affordable_new_emi": 0.0,
+            "risk_adjusted_emi": 0.0,
+            "risk_adjustment": adjustment,
+            "loan_status": "Not eligible"
+        }
+
+    # --------------------------------------------------------
+    # Project cash flow across the longest available horizon.
+    # --------------------------------------------------------
+
+    projection = project_cash_flows(
+        monthly_revenue=revenue,
+        monthly_expenses=expenses,
+        annual_revenue_growth=projected_revenue_growth,
+        annual_expense_growth=projected_expense_growth,
+        months=max(TENURE_OPTIONS_MONTHS)
+    )
+
+    average_projected_revenue = projection[
+        "average_projected_revenue"
+    ]
+
+    average_projected_expenses = projection[
+        "average_projected_expenses"
+    ]
+
+    average_projected_cashflow = projection[
+        "average_projected_cashflow"
+    ]
+
+    minimum_projected_cashflow = projection[
+        "minimum_projected_cashflow"
+    ]
+
+    maximum_projected_cashflow = projection[
+        "maximum_projected_cashflow"
+    ]
+
+    # --------------------------------------------------------
+    # Cash-flow-based EMI capacity.
+    #
+    # We use the minimum projected cash flow and only allow
+    # 40% of it to service the new loan.
+    # --------------------------------------------------------
+
+    cashflow_based_emi = max(
+        minimum_projected_cashflow
+        * MAX_CASHFLOW_TO_NEW_EMI_RATIO,
+        0
+    )
+
+    # --------------------------------------------------------
+    # Debt-service-based EMI capacity.
+    # --------------------------------------------------------
+
+    debt_service_capacity = max(
+        (
+            average_projected_revenue
+            * MAX_TOTAL_DEBT_SERVICE_RATIO
+        )
+        - existing_debt_payment,
+        0
+    )
+
+    # The EMI must satisfy both constraints.
+    maximum_affordable_new_emi = min(
+        cashflow_based_emi,
+        debt_service_capacity
+    )
+
+    # Adjust affordability according to risk category.
+    risk_adjusted_emi = (
+        maximum_affordable_new_emi
         * adjustment
     )
 
-    # Hard eligibility failure
-    if eligibility_status.startswith(
-        "Not Eligible"
-    ):
+    # --------------------------------------------------------
+    # No positive projected repayment capacity.
+    # --------------------------------------------------------
 
-        recommended_amount = 0
+    if risk_adjusted_emi <= 0:
+
+        return {
+            "requested_loan_amount": requested_loan_amount,
+            "recommended_loan_amount": 0.0,
+            "assumed_interest_rate": LOAN_ANNUAL_INTEREST_RATE,
+            "assumed_tenure_months": None,
+            "monthly_emi": 0.0,
+            "average_projected_revenue": average_projected_revenue,
+            "average_projected_expenses": average_projected_expenses,
+            "average_projected_cashflow": average_projected_cashflow,
+            "minimum_projected_cashflow": minimum_projected_cashflow,
+            "maximum_projected_cashflow": maximum_projected_cashflow,
+            "maximum_affordable_new_emi": maximum_affordable_new_emi,
+            "risk_adjusted_emi": risk_adjusted_emi,
+            "risk_adjustment": adjustment,
+            "loan_status": "Insufficient projected cash flow"
+        }
+
+    # --------------------------------------------------------
+    # Calculate maximum serviceable principal for every
+    # candidate tenure.
+    # --------------------------------------------------------
+
+    tenure_capacity = {}
+
+    for tenure in TENURE_OPTIONS_MONTHS:
+
+        tenure_capacity[tenure] = (
+            calculate_max_loan_from_emi(
+                risk_adjusted_emi,
+                annual_rate=LOAN_ANNUAL_INTEREST_RATE,
+                months=tenure
+            )
+        )
+
+    maximum_serviceable_loan = max(
+        tenure_capacity.values()
+    )
+
+    # --------------------------------------------------------
+    # Respect the requested amount.
+    #
+    # If the request is too large, recommend only the
+    # maximum serviceable amount.
+    # --------------------------------------------------------
+
+    if requested_loan_amount > 0:
+
+        recommended_loan_amount = min(
+            requested_loan_amount,
+            maximum_serviceable_loan
+        )
+
+    else:
+
+        recommended_loan_amount = maximum_serviceable_loan
+
+    # --------------------------------------------------------
+    # Choose the shortest tenure that can support the
+    # recommended principal.
+    # --------------------------------------------------------
+
+    recommended_tenure = None
+
+    for tenure in TENURE_OPTIONS_MONTHS:
+
+        emi = calculate_emi(
+            recommended_loan_amount,
+            LOAN_ANNUAL_INTEREST_RATE,
+            tenure
+        )
+
+        if emi <= risk_adjusted_emi:
+
+            recommended_tenure = tenure
+            break
+
+    # --------------------------------------------------------
+    # Fallback to the longest available tenure.
+    # --------------------------------------------------------
+
+    if recommended_tenure is None:
+
+        recommended_tenure = max(
+            TENURE_OPTIONS_MONTHS
+        )
+
+        recommended_loan_amount = min(
+            recommended_loan_amount,
+            tenure_capacity[recommended_tenure]
+        )
+
+    final_emi = calculate_emi(
+        recommended_loan_amount,
+        LOAN_ANNUAL_INTEREST_RATE,
+        recommended_tenure
+    )
 
     return {
+        "requested_loan_amount": requested_loan_amount,
+        "recommended_loan_amount": float(
+            recommended_loan_amount
+        ),
+        "assumed_interest_rate": LOAN_ANNUAL_INTEREST_RATE,
+        "assumed_tenure_months": recommended_tenure,
+        "monthly_emi": float(final_emi),
 
-        'maximum_monthly_debt_service':
-            round(
-                max_total_debt_service,
-                2
-            ),
+        "average_projected_revenue": float(
+            average_projected_revenue
+        ),
 
-        'available_new_debt_service':
-            round(
-                available_new_payment,
-                2
-            ),
+        "average_projected_expenses": float(
+            average_projected_expenses
+        ),
 
-        'serviceability_loan_amount':
-            round(
-                serviceability_amount,
-                2
-            ),
+        "average_projected_cashflow": float(
+            average_projected_cashflow
+        ),
 
-        'risk_adjustment':
-            adjustment,
+        "minimum_projected_cashflow": float(
+            minimum_projected_cashflow
+        ),
 
-        'recommended_loan_amount':
-            round(
-                recommended_amount,
-                2
-            ),
+        "maximum_projected_cashflow": float(
+            maximum_projected_cashflow
+        ),
 
-        'assumed_interest_rate':
-            LOAN_ANNUAL_INTEREST_RATE,
+        "maximum_affordable_new_emi": float(
+            maximum_affordable_new_emi
+        ),
 
-        'assumed_tenure_months':
-            LOAN_TENURE_MONTHS
+        "risk_adjusted_emi": float(
+            risk_adjusted_emi
+        ),
+
+        "risk_adjustment": float(
+            adjustment
+        ),
+
+        "loan_status": "Cash-flow serviceable",
+
+        "tenure_capacity": {
+            str(tenure): float(amount)
+            for tenure, amount in tenure_capacity.items()
+        }
     }
-
 
 # ============================================================
 # SHAP EXPLANATION
