@@ -81,16 +81,25 @@ The system combines the model-based risk category with these business rules to d
 
 ## 💰 Loan Recommendation
 
-The system calculates an indicative loan recommendation using:
+The system generates an indicative loan recommendation using projected cash-flow serviceability and existing debt obligations.
 
-* Monthly revenue
-* Existing monthly debt obligation
-* Maximum allowable debt-service level
-* Assumed interest rate
-* Assumed loan tenure
-* Risk-category adjustment
+The calculation considers:
 
-The recommendation is **indicative only** and must not be interpreted as an actual loan approval or underwriting decision.
+- Current monthly revenue and expenses
+- Projected annual revenue growth
+- Projected annual expense growth
+- Projected monthly cash flow
+- Existing monthly debt obligation
+- Maximum debt-service capacity
+- Risk-category adjustment
+- Requested loan amount
+- Available repayment tenures
+
+The prototype considers repayment periods of 12, 24, 36, 48, and 60 months and selects the shortest tenure that can support the recommended loan amount within the calculated repayment capacity.
+
+The system assumes a 12% annual interest rate for the prototype.
+
+The recommendation is indicative only and must not be interpreted as an approved loan amount or real-world lending decision.
 
 ## 🔎 Explainability
 
