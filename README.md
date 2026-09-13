@@ -4,8 +4,6 @@ An AI-powered prototype for assessing the credit risk and loan eligibility of Sm
 
 ## 🚀 Live Application
 
-## 🚀 Live Application
-
 👉 [Open the Live SME Credit Assessment System](https://sme-credit-scoring.streamlit.app/)
 
 👉 [Open the Google Colab Notebook](https://colab.research.google.com/drive/1fO-dj--8ujRpMGSfrOJxn8u9uXynfIFW?usp=sharing)
